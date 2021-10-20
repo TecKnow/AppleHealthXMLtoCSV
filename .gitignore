@@ -127,4 +127,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-/data/
+/apple_health_export/
+/routes_data.csv
