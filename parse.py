@@ -3,6 +3,7 @@ import geopy.distance
 from pathlib import Path
 from typing import Final
 from csv import DictWriter
+from time import perf_counter_ns
 
 DEFAULT_DATA_DIRECTORY: Final = "./apple_health_export"
 DATA_PATH: Final = Path(DEFAULT_DATA_DIRECTORY).joinpath("workout-routes")
@@ -37,11 +38,13 @@ def geopy_sequence_distance(gpx_points: list[gpxpy.gpx.GPXTrackPoint], units: st
 
 
 if __name__ == "__main__":
+    start_time = perf_counter_ns()
     if not DATA_PATH.is_dir():
         print("Data path does not point to a directory.")
     routes_writer = DictWriter(open(OUTPUT_FILENAME, "w", newline=''),
                                fieldnames=(
-                                   "Track name", "Segment", "Points", "GeoPy distance", "GeoPy closing distance"),
+                                   "Track name", "Segment", "Points", "GeoPy distance", "GeoPy closing distance",
+                                   "GPX 2d distance", "GPX 3d distance", "GeoPy - GPX 3d"),
                                restval="??")
     routes_writer.writeheader()
     for route_file_path in DATA_PATH.iterdir():
@@ -53,5 +56,11 @@ if __name__ == "__main__":
                             "Points": len(segment.points),
                             "GeoPy distance": geopy_sequence_distance(segment.points),
                             "GeoPy closing distance": get_geopy_distance(segment.points[0], segment.points[-1]) if len(
-                                segment.points) > 0 else 0}
+                                segment.points) > 0 else 0,
+                            "GPX 2d distance": segment.length_2d(),
+                            "GPX 3d distance": segment.length_3d(),
+                            }
+                row_data["GeoPy - GPX 3d"] = row_data["GeoPy distance"] - row_data["GPX 3d distance"]
                 routes_writer.writerow(row_data)
+    end_time = perf_counter_ns()
+    print(f"Runtime: {end_time - start_time}ns")
